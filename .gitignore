@@ -1,6 +1,6 @@
-git config --global user.email "karldezoeten@gmail.com"
-
-q
-exit
-opt
-EOF
+venv/
+.env
+data/
+__pycache__/
+*.pyc
+.DS_Store
