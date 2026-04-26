@@ -146,3 +146,26 @@ def sync_activities(db: Session = Depends(get_db)):
         "skipped": skipped,
         "total_processed": len(activities)
     }
+
+@router.get("/activities")
+def get_activities(db: Session = Depends(get_db)):
+    """
+    Return all synced activities from the local database.
+    """
+    from models.activity import Activity
+    activities = db.query(Activity).order_by(Activity.date.desc()).all()
+    
+    return {
+        "total": len(activities),
+        "activities": [
+            {
+                "name": a.name,
+                "type": a.activity_type,
+                "date": a.date,
+                "distance_miles": a.distance_miles,
+                "elevation_gain_ft": a.elevation_gain_ft,
+                "duration_minutes": a.duration_minutes
+            }
+            for a in activities
+        ]
+    }
