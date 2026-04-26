@@ -1,0 +1,6 @@
+git config --global user.email "karldezoeten@gmail.com"
+
+q
+exit
+opt
+EOF
