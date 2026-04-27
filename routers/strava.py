@@ -200,3 +200,84 @@ def get_activities(db: Session = Depends(get_db)):
             for a in activities
         ]
     }
+@router.get("/summary")
+def get_training_summary(db: Session = Depends(get_db)):
+    """
+    High level summary of your training history.
+    This will power the dashboard.
+    """
+    from models.activity import Activity
+    from datetime import timedelta
+
+    activities = db.query(Activity).all()
+
+    # Group by activity type
+    type_groups = {}
+    for a in activities:
+        t = a.activity_type or "Unknown"
+        if t not in type_groups:
+            type_groups[t] = []
+        type_groups[t].append(a)
+
+    # Friendly category mapping
+    run_types = ["Run", "TrailRun"]
+    hike_types = ["Hike"]
+    ski_types = ["AlpineSki", "NordicSki", "BackcountrySki"]
+    bike_types = ["Ride", "MountainBikeRide", "VirtualRide", "GravelRide"]
+    walk_types = ["Walk"]
+
+    runs = [a for a in activities if a.activity_type in run_types]
+    hikes = [a for a in activities if a.activity_type in hike_types]
+    skis = [a for a in activities if a.activity_type in ski_types]
+    bikes = [a for a in activities if a.activity_type in bike_types]
+    walks = [a for a in activities if a.activity_type in walk_types]
+
+    # Last 30 days
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    recent = [a for a in activities if a.date and a.date > thirty_days_ago]
+
+    # Last 7 days
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    this_week = [a for a in activities if a.date and a.date > seven_days_ago]
+
+    return {
+        "all_time": {
+            "total_activities": len(activities),
+            "total_miles": round(sum(a.distance_miles or 0 for a in activities), 1),
+            "total_elevation_ft": round(sum(a.elevation_gain_ft or 0 for a in activities), 0),
+            "total_hours": round(sum(a.duration_minutes or 0 for a in activities) / 60, 1),
+            "by_type": {
+                "runs": len(runs),
+                "hikes": len(hikes),
+                "ski": len(skis),
+                "bike": len(bikes),
+                "walks": len(walks),
+                "other": len(activities) - len(runs) - len(hikes) - len(skis) - len(bikes) - len(walks)
+            }
+        },
+        "last_30_days": {
+            "total_activities": len(recent),
+            "total_miles": round(sum(a.distance_miles or 0 for a in recent), 1),
+            "total_elevation_ft": round(sum(a.elevation_gain_ft or 0 for a in recent), 0),
+            "total_hours": round(sum(a.duration_minutes or 0 for a in recent) / 60, 1),
+            "by_type": {
+                "runs": len([a for a in recent if a.activity_type in run_types]),
+                "hikes": len([a for a in recent if a.activity_type in hike_types]),
+                "ski": len([a for a in recent if a.activity_type in ski_types]),
+                "bike": len([a for a in recent if a.activity_type in bike_types]),
+            }
+        },
+        "this_week": {
+            "total_activities": len(this_week),
+            "total_miles": round(sum(a.distance_miles or 0 for a in this_week), 1),
+            "total_elevation_ft": round(sum(a.elevation_gain_ft or 0 for a in this_week), 0),
+            "total_hours": round(sum(a.duration_minutes or 0 for a in this_week) / 60, 1),
+        },
+        "personal_bests": {
+            "longest_run_miles": round(max((a.distance_miles or 0 for a in runs), default=0), 1),
+            "most_vert_single_activity_ft": round(max((a.elevation_gain_ft or 0 for a in activities), default=0), 0),
+            "longest_ski_miles": round(max((a.distance_miles or 0 for a in skis), default=0), 1),
+            "most_ski_vert_ft": round(max((a.elevation_gain_ft or 0 for a in skis), default=0), 0),
+        },
+        "all_activity_types_found": list(type_groups.keys())
+    }
