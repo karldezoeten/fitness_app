@@ -77,34 +77,56 @@ def strava_callback(code: str, db: Session = Depends(get_db)):
     }
 
 @router.get("/sync")
-def sync_activities(db: Session = Depends(get_db)):
+def sync_activities(
+    db: Session = Depends(get_db),
+    months_back: int = 1        # default to 1 month, user can override
+):
     """
-    Step 3 - Pull your recent activities from Strava
-    and save them to the local database.
+    Pull activities from Strava and save to local database.
+    - First time: call with ?months_back=12 for a full year
+    - Ongoing: call with no params for last month only
     """
     user = db.query(UserSettings).first()
     if not user or not user.strava_access_token:
         raise HTTPException(status_code=400, detail="Not connected to Strava yet")
 
-    # Fetch last 30 activities from Strava
-    response = requests.get(
-        "https://www.strava.com/api/v3/athlete/activities",
-        headers={"Authorization": f"Bearer {user.strava_access_token}"},
-        params={"per_page": 30}
-    )
+    # Calculate how far back to fetch
+    from datetime import timedelta
+    after_date = datetime.utcnow() - timedelta(days=30 * months_back)
+    after_timestamp = int(after_date.timestamp())
 
-    if response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Failed to fetch activities from Strava")
+    # Fetch activities from Strava after the calculated date
+    all_activities = []
+    page = 1
 
-    activities = response.json()
+    while True:
+        response = requests.get(
+            "https://www.strava.com/api/v3/athlete/activities",
+            headers={"Authorization": f"Bearer {user.strava_access_token}"},
+            params={
+                "after": after_timestamp,
+                "per_page": 100,        # max allowed by Strava
+                "page": page
+            }
+        )
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to fetch from Strava")
+
+        batch = response.json()
+        if not batch:
+            break                       # no more activities to fetch
+
+        all_activities.extend(batch)
+        page += 1
 
     # Save each activity to the database
     from models.activity import Activity
     saved = 0
     skipped = 0
 
-    for a in activities:
-        # Check if we already have this activity
+    for a in all_activities:
+        # Skip if already in database
         existing = db.query(Activity).filter(
             Activity.strava_id == str(a["id"])
         ).first()
@@ -122,6 +144,11 @@ def sync_activities(db: Session = Depends(get_db)):
         elevation_gain_ft = round(a.get("total_elevation_gain", 0) * 3.28084, 0)
         duration_minutes = round(a.get("moving_time", 0) / 60, 1)
 
+        # Safely extract coordinates - some activities have no GPS data
+        latlng = a.get("start_latlng") or []
+        start_lat = latlng[0] if len(latlng) >= 2 else None
+        start_lon = latlng[1] if len(latlng) >= 2 else None
+
         activity = Activity(
             strava_id=str(a["id"]),
             name=a.get("name"),
@@ -131,20 +158,24 @@ def sync_activities(db: Session = Depends(get_db)):
             duration_minutes=duration_minutes,
             elevation_gain_ft=elevation_gain_ft,
             avg_heart_rate=a.get("average_heartrate"),
-            start_lat=a.get("start_latlng", [None, None])[0],
-            start_lon=a.get("start_latlng", [None, None])[1],
+            start_lat=start_lat,
+            start_lon=start_lon,
             imported_from_strava=True
         )
         db.add(activity)
         saved += 1
 
+    # Update last sync time
+    user.last_strava_sync = datetime.utcnow()
     db.commit()
 
     return {
         "message": "Sync complete",
         "saved": saved,
         "skipped": skipped,
-        "total_processed": len(activities)
+        "total_processed": len(all_activities),
+        "months_fetched": months_back,
+        "last_sync": user.last_strava_sync
     }
 
 @router.get("/activities")

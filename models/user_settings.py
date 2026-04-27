@@ -47,6 +47,7 @@ class UserSettings(Base):
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_strava_sync = Column(DateTime, nullable=True)  # tracks when we last synced
 
     def __repr__(self):
         return f"<UserSettings for {self.name}>"
