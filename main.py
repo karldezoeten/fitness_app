@@ -3,6 +3,8 @@ from fastapi.staticfiles import StaticFiles
 from database import engine, init_db
 from routers import strava
 import uvicorn
+from routers import strava, goals
+
 
 # Create the FastAPI app
 app = FastAPI(
@@ -16,6 +18,7 @@ app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
 # Register routers
 app.include_router(strava.router)
+app.include_router(goals.router)
 
 @app.on_event("startup")
 def startup_event():
@@ -43,3 +46,4 @@ if __name__ == "__main__":
         port=8000,
         reload=True
     )
+
