@@ -69,28 +69,36 @@ def create_goal(
     else:
         phase = "taper"
 
-    # Calculate weekly targets based on race demands and phase
-    # These percentages are based on standard ultra training principles
+    # Phase multipliers - scale workout targets based on training phase
     phase_multipliers = {
-        "base":  {"weekly_miles": 0.55, "weekly_vert": 0.50, "long_run": 0.55, "long_run_vert": 0.50},
-        "build": {"weekly_miles": 0.70, "weekly_vert": 0.65, "long_run": 0.70, "long_run_vert": 0.65},
-        "peak":  {"weekly_miles": 0.85, "weekly_vert": 0.80, "long_run": 0.85, "long_run_vert": 0.80},
-        "taper": {"weekly_miles": 0.50, "weekly_vert": 0.45, "long_run": 0.60, "long_run_vert": 0.55},
+        "base":  {"weekly_miles": 0.55, "long_run": 0.55, "long_run_vert": 0.50},
+        "build": {"weekly_miles": 0.70, "long_run": 0.70, "long_run_vert": 0.65},
+        "peak":  {"weekly_miles": 0.85, "long_run": 0.85, "long_run_vert": 0.80},
+        "taper": {"weekly_miles": 0.50, "long_run": 0.60, "long_run_vert": 0.55},
     }
 
     m = phase_multipliers[phase]
 
-    # Base weekly targets derived from race demands
-    # A typical ultra plan has weekly volume at ~3-4x the race distance
+    # Base weekly miles derived from race distance
     base_weekly_miles = race_distance_miles * 1.5
-    base_weekly_vert = race_elevation_gain_ft * 1.5
 
+    # Calculate individual workout targets first
     target_weekly_miles = round(base_weekly_miles * m["weekly_miles"], 1)
-    target_weekly_vert = round(base_weekly_vert * m["weekly_vert"], 0)
+
     long_run_max = round(race_distance_miles * m["long_run"], 1)
     long_run_min = round(long_run_max * 0.75, 1)
     long_run_max_vert = round(race_elevation_gain_ft * m["long_run_vert"], 0)
     long_run_min_vert = round(long_run_max_vert * 0.75, 0)
+
+    vert_day_min = round(race_elevation_gain_ft * 0.50, 0)
+    vert_day_max = round(race_elevation_gain_ft * 0.85, 0)
+
+    # Weekly vert is derived from individual workouts - not calculated independently
+    # Average long run vert + average vert day + ~20% from easy runs
+    long_run_vert_avg = (long_run_min_vert + long_run_max_vert) / 2
+    vert_day_avg = (vert_day_min + vert_day_max) / 2
+    easy_run_vert = round((long_run_vert_avg + vert_day_avg) * 0.20, 0)
+    target_weekly_vert = round(long_run_vert_avg + vert_day_avg + easy_run_vert, 0)
 
     # Create the goal
     goal = Goal(
@@ -110,8 +118,8 @@ def create_goal(
         long_run_max_miles=long_run_max,
         long_run_min_vert_ft=long_run_min_vert,
         long_run_max_vert_ft=long_run_max_vert,
-        vert_day_min_gain_ft=round(race_elevation_gain_ft * 0.5, 0),
-        vert_day_max_gain_ft=round(race_elevation_gain_ft * 0.85, 0),
+        vert_day_min_gain_ft=vert_day_min,
+        vert_day_max_gain_ft=vert_day_max,
         vert_day_max_miles=12.0,
         is_active=True
     )
@@ -139,7 +147,13 @@ def create_goal(
             "target_weekly_vert_ft": target_weekly_vert,
             "long_run_range_miles": f"{long_run_min} - {long_run_max}",
             "long_run_vert_range_ft": f"{long_run_min_vert} - {long_run_max_vert}",
-            "vert_day_range_ft": f"{round(race_elevation_gain_ft * 0.5, 0)} - {round(race_elevation_gain_ft * 0.85, 0)}"
+            "vert_day_range_ft": f"{vert_day_min} - {vert_day_max}",
+            "weekly_vert_breakdown": {
+                "long_run_vert_avg": long_run_vert_avg,
+                "vert_day_avg": vert_day_avg,
+                "easy_run_vert": easy_run_vert,
+                "total": target_weekly_vert
+            }
         }
     }
 
@@ -156,10 +170,16 @@ def get_active_goal(db: Session = Depends(get_db)):
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
 
-    # Recalculate weeks to race
+    # Recalculate weeks to race fresh every time
     today = datetime.utcnow()
     days_to_race = (goal.race_date - today).days
     weeks_to_race = max(0, days_to_race // 7)
+
+    # Recalculate weekly vert from individual workouts
+    long_run_vert_avg = (goal.long_run_min_vert_ft + goal.long_run_max_vert_ft) / 2
+    vert_day_avg = (goal.vert_day_min_gain_ft + goal.vert_day_max_gain_ft) / 2
+    easy_run_vert = round((long_run_vert_avg + vert_day_avg) * 0.20, 0)
+    target_weekly_vert = round(long_run_vert_avg + vert_day_avg + easy_run_vert, 0)
 
     return {
         "race_name": goal.race_name,
@@ -170,9 +190,38 @@ def get_active_goal(db: Session = Depends(get_db)):
         "current_phase": goal.current_phase,
         "training_targets": {
             "target_weekly_miles": goal.target_weekly_miles,
-            "target_weekly_vert_ft": goal.target_weekly_vert_ft,
+            "target_weekly_vert_ft": target_weekly_vert,
             "long_run_range_miles": f"{goal.long_run_min_miles} - {goal.long_run_max_miles}",
             "long_run_vert_range_ft": f"{goal.long_run_min_vert_ft} - {goal.long_run_max_vert_ft}",
             "vert_day_range_ft": f"{goal.vert_day_min_gain_ft} - {goal.vert_day_max_gain_ft}",
+            "weekly_vert_breakdown": {
+                "long_run_vert_avg": long_run_vert_avg,
+                "vert_day_avg": vert_day_avg,
+                "easy_run_vert": easy_run_vert,
+                "total": target_weekly_vert
+            }
         }
+    }
+
+@router.get("/all")
+def get_all_goals(db: Session = Depends(get_db)):
+    """
+    Return all goals - active and past.
+    """
+    goals = db.query(Goal).order_by(Goal.race_date.desc()).all()
+    return {
+        "total": len(goals),
+        "goals": [
+            {
+                "id": g.id,
+                "race_name": g.race_name,
+                "race_date": g.race_date,
+                "race_distance_miles": g.race_distance_miles,
+                "race_elevation_gain_ft": g.race_elevation_gain_ft,
+                "current_phase": g.current_phase,
+                "is_active": g.is_active,
+                "completed": g.completed
+            }
+            for g in goals
+        ]
     }

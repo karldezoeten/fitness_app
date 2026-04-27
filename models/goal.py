@@ -19,41 +19,41 @@ class Goal(Base):
     race_elevation_gain_ft = Column(Float)        # e.g. 6000.0
     race_elevation_loss_ft = Column(Float, nullable=True)
     race_terrain = Column(String, nullable=True)  # e.g. "mountain, technical, exposed"
-    race_difficulty = Column(String, nullable=True) # "local", "regional", "elite"
+    race_difficulty = Column(String, nullable=True)
 
     # Cut off times - critical for ultra planning
-    race_cutoff_hours = Column(Float, nullable=True)    # total time allowed e.g. 14.0
-    aid_station_cutoffs = Column(String, nullable=True) # stored as JSON string
+    race_cutoff_hours = Column(Float, nullable=True)
+    aid_station_cutoffs = Column(String, nullable=True)
 
     # Your personal goals for the race
-    goal_type = Column(String, default="finish")        # "finish", "time", "placement"
-    goal_finish_time_hours = Column(Float, nullable=True) # e.g. 10.5 hours
-    goal_notes = Column(String, nullable=True)          # e.g. "just want to finish strong"
+    goal_type = Column(String, default="finish")
+    goal_finish_time_hours = Column(Float, nullable=True)
+    goal_notes = Column(String, nullable=True)
 
-    # Training phase - where you are in the program right now
-    current_phase = Column(String, default="base")      # "base", "build", "peak", "taper"
-    weeks_to_race = Column(Integer, nullable=True)      # calculated automatically
+    # Training phase
+    current_phase = Column(String, default="base")   # "base", "build", "peak", "taper"
+    weeks_to_race = Column(Integer, nullable=True)
     total_program_weeks = Column(Integer, nullable=True)
 
-    # Weekly training targets - adjust automatically by phase
+    # Weekly training targets
     target_weekly_miles = Column(Float, nullable=True)
-    target_weekly_vert_ft = Column(Float, nullable=True)  # vertical feet per week
-    target_weekly_time_hours = Column(Float, nullable=True) # time on feet per week
+    target_weekly_vert_ft = Column(Float, nullable=True)
+    target_weekly_time_hours = Column(Float, nullable=True)
 
-    # Long run targets for current phase
+    # Long run targets
     long_run_min_miles = Column(Float, nullable=True)
     long_run_max_miles = Column(Float, nullable=True)
     long_run_min_vert_ft = Column(Float, nullable=True)
     long_run_max_vert_ft = Column(Float, nullable=True)
 
-    # Steep hike / vert day targets
+    # Vert day targets
     vert_day_min_gain_ft = Column(Float, nullable=True)
     vert_day_max_gain_ft = Column(Float, nullable=True)
     vert_day_max_miles = Column(Float, nullable=True)
 
-    # Back to back long efforts - key for ultra training
-    back_to_back_long_runs = Column(Boolean, default=False)  # Saturday + Sunday big days
-    back_to_back_target_miles = Column(Float, nullable=True) # combined miles for both days
+    # Back to back long efforts
+    back_to_back_long_runs = Column(Boolean, default=False)
+    back_to_back_target_miles = Column(Float, nullable=True)
     back_to_back_target_vert_ft = Column(Float, nullable=True)
 
     # Progress tracking
@@ -63,9 +63,9 @@ class Goal(Base):
     total_vert_in_program_ft = Column(Float, default=0.0)
 
     # Status
-    is_active = Column(Boolean, default=True)     # current goal vs past goals
-    completed = Column(Boolean, default=False)    # did you finish the race?
-    race_result_time = Column(Float, nullable=True) # your actual finish time
+    is_active = Column(Boolean, default=True)
+    completed = Column(Boolean, default=False)
+    race_result_time = Column(Float, nullable=True)
     race_result_notes = Column(String, nullable=True)
 
     # Metadata
