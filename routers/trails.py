@@ -109,33 +109,3 @@ def search_vert_day_trails(
         "phase": goal.current_phase,
         **results
     }
-
-@router.get("/test_osm")
-def test_osm():
-    """
-    Test Overpass API connection directly.
-    """
-    import httpx
-    import urllib.parse
-
-    query = """[out:json][timeout:25];relation["route"="hiking"]["name"](around:10000,40.7608,-111.8910);out tags;"""
-    
-    encoded = urllib.parse.urlencode({"data": query})
-    
-    try:
-        response = httpx.post(
-            "https://overpass-api.de/api/interpreter",
-            content=encoded.encode("utf-8"),
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": "TrailTrainingApp/1.0 (trail running training application)"
-            },
-    timeout=30.0
-)
-        return {
-            "status_code": response.status_code,
-            "request_headers": dict(response.request.headers),
-            "response_text": response.text[:500]
-        }
-    except Exception as e:
-        return {"error": str(e)}

@@ -35,6 +35,7 @@ class Plan(Base):
 
     # Status
     is_complete = Column(Boolean, default=False)
+    generated_by_ai = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
