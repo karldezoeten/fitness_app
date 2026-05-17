@@ -4,6 +4,7 @@ from database import engine, init_db
 from routers import strava
 import uvicorn
 from routers import strava, goals, trails, planning
+from fastapi.responses import FileResponse
 
 
 # Create the FastAPI app
@@ -39,6 +40,14 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/planner")
+def planner():
+    return FileResponse("frontend/planner.html")
+
+@app.get("/dashboard")
+def dashboard():
+    return FileResponse("frontend/dashboard.html")
 
 # Run the app
 if __name__ == "__main__":

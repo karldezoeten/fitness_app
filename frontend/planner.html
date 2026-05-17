@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trail Training — Planner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:         #0a0c0f;
+      --surface:    #111418;
+      --surface2:   #1a1f26;
+      --surface3:   #222830;
+      --border:     #1f2730;
+      --border2:    #2a3340;
+      --accent:     #c8f04a;
+      --accent2:    #4af0c8;
+      --accent3:    #f0a84a;
+      --accent4:    #4a8ef0;
+      --text:       #e8edf2;
+      --muted:      #5a6572;
+      --muted2:     #3a4450;
+      --danger:     #f04a4a;
+
+      /* Workout type colors — subtle */
+      --easy-run:   rgba(200,240,74,0.08);
+      --easy-run-b: rgba(200,240,74,0.35);
+      --long-run:   rgba(240,168,74,0.08);
+      --long-run-b: rgba(240,168,74,0.35);
+      --vert-day:   rgba(74,240,200,0.08);
+      --vert-day-b: rgba(74,240,200,0.35);
+      --track:      rgba(74,142,240,0.08);
+      --track-b:    rgba(74,142,240,0.35);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 40% at 10% 0%, rgba(200,240,74,0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 90% 100%, rgba(74,240,200,0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 36px 0 28px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+
+    .logo { display: flex; flex-direction: column; gap: 2px; }
+    .logo-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .logo-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+
+    /* ── NAV ── */
+    nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+    .nav-link {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .nav-link:hover { color: var(--text); }
+    .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── WEEK HEADER ── */
+    .week-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 16px;
+    }
+
+    .week-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .week-nav-btn {
+      width: 36px;
+      height: 36px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      font-size: 16px;
+    }
+    .week-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .week-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .week-dates {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+    .week-meta {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .week-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover { border-color: var(--border2); color: var(--text); }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a0c0f;
+      font-weight: 500;
+    }
+    .btn.primary:hover { background: #d8ff5a; }
+    .btn.primary.loading {
+      background: var(--surface2);
+      border-color: var(--border);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    /* ── WEEK SUMMARY BAR ── */
+    .week-summary {
+      display: flex;
+      gap: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .summary-stat {
+      flex: 1;
+      padding: 14px 20px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .summary-stat:last-child { border-right: none; }
+
+    .summary-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .summary-values {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .summary-actual {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 0.03em;
+      color: var(--accent);
+    }
+
+    .summary-target {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .summary-bar-wrap {
+      height: 2px;
+      background: var(--border);
+      margin-top: 4px;
+    }
+    .summary-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.8s ease;
+    }
+    .summary-bar-fill.over { background: var(--accent2); }
+
+    /* ── CALENDAR ── */
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .day-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 480px;
+    }
+
+    .day-header {
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom: none;
+    }
+
+    .day-name {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .day-date {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 0.03em;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .day-date.today { color: var(--accent); }
+
+    .day-drop-zone {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 8px;
+      min-height: 400px;
+      transition: background 0.15s, border-color 0.15s;
+      position: relative;
+    }
+
+    .day-drop-zone.drag-over {
+      background: rgba(200,240,74,0.04);
+      border-color: rgba(200,240,74,0.3);
+    }
+
+    .day-drop-zone.empty-hint::after {
+      content: '+';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      color: var(--muted2);
+      pointer-events: none;
+    }
+
+    /* ── WORKOUT CARD ── */
+    .workout-card {
+      border: 1px solid var(--border);
+      padding: 12px;
+      margin-bottom: 6px;
+      cursor: grab;
+      transition: all 0.15s;
+      position: relative;
+      user-select: none;
+    }
+
+    .workout-card:active { cursor: grabbing; }
+    .workout-card.dragging {
+      opacity: 0.4;
+      transform: scale(0.97);
+    }
+
+    .workout-card:hover { border-color: var(--border2); }
+
+    /* Type-specific card styles */
+    .workout-card.easy_run  { background: var(--easy-run);  border-left: 2px solid rgba(200,240,74,0.5); }
+    .workout-card.long_run  { background: var(--long-run);  border-left: 2px solid rgba(240,168,74,0.5); }
+    .workout-card.vert_day  { background: var(--vert-day);  border-left: 2px solid rgba(74,240,200,0.5); }
+    .workout-card.track_workout { background: var(--track); border-left: 2px solid rgba(74,142,240,0.5); }
+
+    .workout-card.completed {
+      opacity: 0.7;
+    }
+    .workout-card.completed::after {
+      content: '✓';
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-size: 14px;
+      color: var(--accent);
+    }
+
+    .workout-type-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .easy_run  .workout-type-badge { color: var(--accent); }
+    .long_run  .workout-type-badge { color: var(--accent3); }
+    .vert_day  .workout-type-badge { color: var(--accent2); }
+    .track_workout .workout-type-badge { color: var(--accent4); }
+
+    .workout-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .workout-stats {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .workout-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .workout-stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 0.03em;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .workout-stat-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .workout-trail {
+      font-size: 11px;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 6px;
+      line-height: 1.4;
+      padding-top: 6px;
+      border-top: 1px solid var(--border);
+    }
+
+    .workout-trail strong {
+      color: var(--text);
+      font-style: normal;
+      font-weight: 400;
+    }
+
+    .workout-notes {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.5;
+      padding-top: 6px;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+
+    .workout-card:hover .workout-notes { display: block; }
+
+    .workout-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border);
+    }
+
+    .action-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .action-btn:hover { border-color: var(--border2); color: var(--text); }
+    .action-btn.done:hover { border-color: var(--accent); color: var(--accent); }
+    .action-btn.skip:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── AI NOTES BANNER ── */
+    .ai-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--accent);
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .ai-icon {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    .ai-text {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    /* ── LOADING STATE ── */
+    .generating-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,12,15,0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      gap: 20px;
+    }
+
+    .generating-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+    }
+
+    .generating-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 320px;
+    }
+
+    .gen-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0;
+      transform: translateX(-10px);
+      transition: all 0.4s ease;
+    }
+
+    .gen-step.active {
+      opacity: 1;
+      transform: translateX(0);
+      color: var(--text);
+    }
+
+    .gen-step.done { opacity: 0.5; }
+
+    .gen-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--border2);
+      flex-shrink: 0;
+    }
+
+    .gen-step.active .gen-dot { background: var(--accent); }
+    .gen-step.done .gen-dot { background: var(--muted); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .empty-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .empty-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted2);
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      padding: 12px 20px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--text);
+      z-index: 200;
+      transform: translateY(60px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-left: 2px solid var(--accent); }
+    .toast.error { border-left: 2px solid var(--danger); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <span class="logo-eyebrow">Ultra Training</span>
+      <span class="logo-title">Summit Log</span>
+    </div>
+  </header>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-link" href="/dashboard">Dashboard</a>
+    <a class="nav-link active">Planner</a>
+    <a class="nav-link" href="#">Trails</a>
+  </nav>
+
+  <!-- WEEK HEADER -->
+  <div class="week-header">
+    <div class="week-nav">
+      <button class="week-nav-btn" onclick="changeWeek(-1)">←</button>
+      <div class="week-label">
+        <div class="week-dates" id="week-dates">—</div>
+        <div class="week-meta" id="week-meta">Loading...</div>
+      </div>
+      <button class="week-nav-btn" onclick="changeWeek(1)">→</button>
+    </div>
+    <div class="week-actions">
+      <button class="btn" onclick="changeWeek(0, true)">Today</button>
+      <button class="btn primary" id="generate-btn" onclick="generatePlan()">
+        <span>⚡</span> Generate with AI
+      </button>
+    </div>
+  </div>
+
+  <!-- WEEK SUMMARY BAR -->
+  <div class="week-summary" id="week-summary" style="display:none">
+    <div class="summary-stat">
+      <div class="summary-label">Planned Miles</div>
+      <div class="summary-values">
+        <div class="summary-actual" id="sum-miles">0</div>
+        <div class="summary-target" id="sum-miles-target">/ — mi</div>
+      </div>
+      <div class="summary-bar-wrap">
+        <div class="summary-bar-fill" id="sum-miles-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Planned Vert</div>
+      <div class="summary-values">
+        <div class="summary-actual" id="sum-vert">0</div>
+        <div class="summary-target" id="sum-vert-target">/ — ft</div>
+      </div>
+      <div class="summary-bar-wrap">
+        <div class="summary-bar-fill" id="sum-vert-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Planned Hours</div>
+      <div class="summary-values">
+        <div class="summary-actual" id="sum-hours">0</div>
+        <div class="summary-target">hrs on feet</div>
+      </div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Workouts</div>
+      <div class="summary-values">
+        <div class="summary-actual" id="sum-workouts">0</div>
+        <div class="summary-target">of 4 planned</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI NOTES -->
+  <div class="ai-notes" id="ai-notes" style="display:none">
+    <div class="ai-icon">AI Coach</div>
+    <div class="ai-text" id="ai-notes-text"></div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="calendar" id="calendar"></div>
+
+</div>
+
+<!-- GENERATING OVERLAY -->
+<div class="generating-overlay" id="generating-overlay" style="display:none">
+  <div class="generating-title">Building Your Week</div>
+  <div class="generating-steps">
+    <div class="gen-step" id="step-1"><div class="gen-dot"></div>Analyzing your training history</div>
+    <div class="gen-step" id="step-2"><div class="gen-dot"></div>Checking phase targets</div>
+    <div class="gen-step" id="step-3"><div class="gen-dot"></div>Scanning Wasatch trails</div>
+    <div class="gen-step" id="step-4"><div class="gen-dot"></div>Scheduling your week</div>
+    <div class="gen-step" id="step-5"><div class="gen-dot"></div>Finalizing coaching notes</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:8000';
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+let currentOffset = 0;
+let currentPlan = null;
+let draggedSlot = null;
+let draggedDay = null;
+
+// ── TOAST ──
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ── DATE HELPERS ──
+function getWeekDates(offset) {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + (offset * 7));
+  monday.setHours(0,0,0,0);
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+}
+
+function fmtShort(d) {
+  return d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+}
+
+function isToday(d) {
+  const t = new Date();
+  return d.getDate() === t.getDate() &&
+         d.getMonth() === t.getMonth() &&
+         d.getFullYear() === t.getFullYear();
+}
+
+function fmt(n, dec=1) {
+  return n != null ? Number(n).toFixed(dec) : '—';
+}
+
+function fmtNum(n) {
+  if (n == null) return '—';
+  return Number(n).toLocaleString('en-US', {maximumFractionDigits:0});
+}
+
+// ── WORKOUT TYPE LABELS ──
+const TYPE_LABELS = {
+  easy_run: 'Easy Run',
+  long_run: 'Long Run',
+  vert_day: 'Vert Day',
+  track_workout: 'Track'
+};
+
+// ── RENDER CALENDAR ──
+function renderCalendar(weekDates, plan) {
+  const cal = document.getElementById('calendar');
+  cal.innerHTML = '';
+
+  // Build slot map by day
+  const slotsByDay = {};
+  if (plan && plan.slots) {
+    plan.slots.forEach(s => {
+      slotsByDay[s.day] = s;
+    });
+  }
+
+  const hasPlan = plan && plan.plan_exists && plan.slots && plan.slots.length > 0;
+
+  weekDates.forEach((date, i) => {
+    const dayName = DAYS[i];
+    const slot = slotsByDay[dayName];
+
+    const col = document.createElement('div');
+    col.className = 'day-col';
+    col.dataset.day = dayName;
+
+    // Day header
+    const header = document.createElement('div');
+    header.className = 'day-header';
+    header.innerHTML = `
+      <div class="day-name">${dayName.slice(0,3)}</div>
+      <div class="day-date ${isToday(date) ? 'today' : ''}">${date.getDate()}</div>
+    `;
+
+    // Drop zone
+    const zone = document.createElement('div');
+    zone.className = 'day-drop-zone' + (!slot ? ' empty-hint' : '');
+    zone.dataset.day = dayName;
+
+    // Drag events
+    zone.addEventListener('dragover', e => {
+      e.preventDefault();
+      zone.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', () => {
+      zone.classList.remove('drag-over');
+    });
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      if (draggedSlot && draggedDay !== dayName) {
+        moveSlot(draggedSlot, dayName);
+      }
+    });
+
+    // Render workout card if slot exists
+    if (slot) {
+      zone.appendChild(buildWorkoutCard(slot));
+    }
+
+    col.appendChild(header);
+    col.appendChild(zone);
+    cal.appendChild(col);
+  });
+
+  // Show empty state if no plan
+  if (!hasPlan) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.innerHTML = `
+      <div class="empty-title">No Plan This Week</div>
+      <div class="empty-sub">Click "Generate with AI" to build your week</div>
+    `;
+    cal.innerHTML = '';
+    cal.appendChild(empty);
+  }
+}
+
+// ── BUILD WORKOUT CARD ──
+function buildWorkoutCard(slot) {
+  const card = document.createElement('div');
+  card.className = `workout-card ${slot.type}${slot.completed ? ' completed' : ''}`;
+  card.draggable = true;
+  card.dataset.slotId = slot.id;
+  card.dataset.day = slot.day;
+
+  card.addEventListener('dragstart', () => {
+    draggedSlot = slot.id;
+    draggedDay = slot.day;
+    card.classList.add('dragging');
+  });
+  card.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+    draggedSlot = null;
+    draggedDay = null;
+  });
+
+  const trailHtml = slot.suggested_trail ? `
+    <div class="workout-trail">
+      <strong>${slot.suggested_trail}</strong>
+    </div>
+  ` : '';
+
+  const notesHtml = slot.notes ? `
+    <div class="workout-notes">${slot.notes}</div>
+  ` : '';
+
+  const actionsHtml = !slot.completed && !slot.skipped ? `
+    <div class="workout-actions">
+      <button class="action-btn done" onclick="markDone(${slot.id}, event)">Done</button>
+      <button class="action-btn skip" onclick="markSkipped(${slot.id}, event)">Skip</button>
+    </div>
+  ` : slot.skipped ? `
+    <div class="workout-actions">
+      <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--danger);letter-spacing:0.1em">SKIPPED</span>
+    </div>
+  ` : '';
+
+  card.innerHTML = `
+    <div class="workout-type-badge">${TYPE_LABELS[slot.type] || slot.type}</div>
+    <div class="workout-label">${slot.label || slot.type}</div>
+    <div class="workout-stats">
+      ${slot.target_miles ? `
+        <div class="workout-stat">
+          <div class="workout-stat-value">${fmt(slot.target_miles)}</div>
+          <div class="workout-stat-label">Miles</div>
+        </div>
+      ` : ''}
+      ${slot.target_vert_ft ? `
+        <div class="workout-stat">
+          <div class="workout-stat-value">${fmtNum(slot.target_vert_ft)}</div>
+          <div class="workout-stat-label">Ft Vert</div>
+        </div>
+      ` : ''}
+      ${slot.target_time_hours ? `
+        <div class="workout-stat">
+          <div class="workout-stat-value">${fmt(slot.target_time_hours)}</div>
+          <div class="workout-stat-label">Hours</div>
+        </div>
+      ` : ''}
+    </div>
+    ${trailHtml}
+    ${notesHtml}
+    ${actionsHtml}
+  `;
+
+  return card;
+}
+
+// ── UPDATE WEEK SUMMARY ──
+function updateSummary(plan, goal) {
+  const summaryEl = document.getElementById('week-summary');
+
+  if (!plan || !plan.plan_exists || !plan.slots || plan.slots.length === 0) {
+    summaryEl.style.display = 'none';
+    return;
+  }
+
+  summaryEl.style.display = 'flex';
+
+  const totalMiles = plan.slots.reduce((s,sl) => s + (sl.target_miles || 0), 0);
+  const totalVert  = plan.slots.reduce((s,sl) => s + (sl.target_vert_ft || 0), 0);
+  const totalHours = plan.slots.reduce((s,sl) => s + (sl.target_time_hours || 0), 0);
+  const workouts   = plan.slots.length;
+
+  document.getElementById('sum-miles').textContent = fmt(totalMiles);
+  document.getElementById('sum-vert').textContent  = fmtNum(totalVert);
+  document.getElementById('sum-hours').textContent = fmt(totalHours);
+  document.getElementById('sum-workouts').textContent = workouts;
+
+  if (goal) {
+    const targetMiles = goal.training_targets?.target_weekly_miles;
+    const targetVert  = goal.training_targets?.target_weekly_vert_ft;
+
+    if (targetMiles) {
+      document.getElementById('sum-miles-target').textContent = `/ ${targetMiles} mi`;
+      const pct = Math.min(totalMiles / targetMiles * 100, 100);
+      document.getElementById('sum-miles-bar').style.width = pct + '%';
+      document.getElementById('sum-miles-bar').className = 
+        'summary-bar-fill' + (totalMiles > targetMiles ? ' over' : '');
+    }
+
+    if (targetVert) {
+      document.getElementById('sum-vert-target').textContent = `/ ${fmtNum(targetVert)} ft`;
+      const pct = Math.min(totalVert / targetVert * 100, 100);
+      document.getElementById('sum-vert-bar').style.width = pct + '%';
+      document.getElementById('sum-vert-bar').className =
+        'summary-bar-fill' + (totalVert > targetVert ? ' over' : '');
+    }
+  }
+}
+
+// ── LOAD WEEK ──
+async function loadWeek(offset) {
+  currentOffset = offset;
+  const weekDates = getWeekDates(offset);
+
+  // Update week header
+  document.getElementById('week-dates').textContent =
+    `${fmtShort(weekDates[0])} — ${fmtShort(weekDates[6])}`;
+
+  try {
+    const [planRes, goalRes] = await Promise.all([
+      fetch(`${API}/planning/week?week_offset=${offset}`),
+      fetch(`${API}/goals/active`)
+    ]);
+
+    const plan = planRes.ok ? await planRes.json() : null;
+    const goal = goalRes.ok ? await goalRes.json() : null;
+
+    // Update meta
+    if (goal) {
+      document.getElementById('week-meta').textContent =
+        `${goal.current_phase.toUpperCase()} PHASE · ${goal.weeks_to_race} WEEKS TO ${goal.race_name.toUpperCase()}`;
+    } else {
+      document.getElementById('week-meta').textContent = 'No active goal set';
+    }
+
+    // AI notes
+    const notesEl = document.getElementById('ai-notes');
+    const notesText = document.getElementById('ai-notes-text');
+    if (plan && plan.week_notes) {
+      notesEl.style.display = 'flex';
+      notesText.textContent = plan.week_notes;
+    } else {
+      notesEl.style.display = 'none';
+    }
+
+    currentPlan = plan;
+    renderCalendar(weekDates, plan);
+    updateSummary(plan, goal);
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('week-meta').textContent = 'Error loading plan';
+    renderCalendar(weekDates, null);
+  }
+}
+
+// ── CHANGE WEEK ──
+function changeWeek(delta, reset = false) {
+  const newOffset = reset ? 0 : currentOffset + delta;
+  loadWeek(newOffset);
+}
+
+// ── GENERATE PLAN ──
+async function generatePlan() {
+  const btn = document.getElementById('generate-btn');
+  const overlay = document.getElementById('generating-overlay');
+
+  btn.className = 'btn primary loading';
+  btn.textContent = 'Generating...';
+  overlay.style.display = 'flex';
+
+  // Animate steps
+  const steps = ['step-1','step-2','step-3','step-4','step-5'];
+  let i = 0;
+  const stepInterval = setInterval(() => {
+    if (i > 0) {
+      document.getElementById(steps[i-1]).classList.remove('active');
+      document.getElementById(steps[i-1]).classList.add('done');
+    }
+    if (i < steps.length) {
+      document.getElementById(steps[i]).classList.add('active');
+      i++;
+    } else {
+      clearInterval(stepInterval);
+    }
+  }, 1200);
+
+  try {
+    const res = await fetch(`${API}/planning/generate?week_offset=${currentOffset}`, {
+      method: 'POST'
+    });
+
+    clearInterval(stepInterval);
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Generation failed');
+    }
+
+    // Mark all done
+    steps.forEach(s => {
+      document.getElementById(s).classList.add('done');
+      document.getElementById(s).classList.remove('active');
+    });
+
+    await new Promise(r => setTimeout(r, 400));
+    overlay.style.display = 'none';
+    steps.forEach(s => {
+      document.getElementById(s).className = 'gen-step';
+    });
+
+    await loadWeek(currentOffset);
+    showToast('Plan generated successfully', 'success');
+
+  } catch(e) {
+    clearInterval(stepInterval);
+    overlay.style.display = 'none';
+    steps.forEach(s => {
+      document.getElementById(s).className = 'gen-step';
+    });
+    showToast(`Error: ${e.message}`, 'error');
+  } finally {
+    btn.className = 'btn primary';
+    btn.innerHTML = '<span>⚡</span> Generate with AI';
+  }
+}
+
+// ── MOVE SLOT (drag and drop) ──
+async function moveSlot(slotId, newDay) {
+  try {
+    const res = await fetch(`${API}/planning/slot/${slotId}/move?new_day=${newDay}`, {
+      method: 'PUT'
+    });
+    if (!res.ok) throw new Error('Move failed');
+    await loadWeek(currentOffset);
+    showToast(`Moved to ${newDay}`, 'success');
+  } catch(e) {
+    showToast('Could not move workout', 'error');
+  }
+}
+
+// ── MARK DONE ──
+async function markDone(slotId, e) {
+  e.stopPropagation();
+  try {
+    const res = await fetch(`${API}/planning/slot/${slotId}/complete`, {
+      method: 'PUT'
+    });
+    if (!res.ok) throw new Error();
+    await loadWeek(currentOffset);
+    showToast('Workout marked complete ✓', 'success');
+  } catch {
+    showToast('Could not update workout', 'error');
+  }
+}
+
+// ── MARK SKIPPED ──
+async function markSkipped(slotId, e) {
+  e.stopPropagation();
+  try {
+    const res = await fetch(`${API}/planning/slot/${slotId}/skip`, {
+      method: 'PUT'
+    });
+    if (!res.ok) throw new Error();
+    await loadWeek(currentOffset);
+    showToast('Workout skipped', 'success');
+  } catch {
+    showToast('Could not update workout', 'error');
+  }
+}
+
+// ── INIT ──
+loadWeek(0);
+</script>
+</body>
+</html>

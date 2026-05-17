@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trail Training — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #0a0c0f;
+      --surface:   #111418;
+      --surface2:  #1a1f26;
+      --border:    #1f2730;
+      --accent:    #c8f04a;
+      --accent2:   #4af0c8;
+      --text:      #e8edf2;
+      --muted:     #5a6572;
+      --danger:    #f04a4a;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(200,240,74,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(74,240,200,0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 36px 0 28px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+
+    .logo { display: flex; flex-direction: column; gap: 2px; }
+    .logo-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .logo-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .header-right { display: flex; align-items: center; gap: 16px; }
+
+    .sync-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sync-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .sync-btn svg { width: 14px; height: 14px; }
+
+    .race-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      padding: 20px 28px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      animation: slideIn 0.5s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .race-info { display: flex; flex-direction: column; gap: 4px; }
+    .race-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .race-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+    }
+
+    .race-stats { display: flex; gap: 32px; }
+    .race-stat { display: flex; flex-direction: column; gap: 2px; }
+    .race-stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 0.04em;
+      color: var(--text);
+    }
+    .race-stat-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .phase-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 24px;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.10s; }
+    .card:nth-child(4) { animation-delay: 0.15s; }
+
+    .card-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .card-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      color: var(--text);
+    }
+    .card-value.accent { color: var(--accent); }
+    .card-value.accent2 { color: var(--accent2); }
+    .card-unit { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      margin-top: 8px;
+    }
+    .section-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .section-line { flex: 1; height: 1px; background: var(--border); }
+
+    .targets-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .targets-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 16px;
+    }
+    .target-item { display: flex; flex-direction: column; gap: 6px; }
+    .target-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .target-range {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+    }
+    .target-desc { font-size: 11px; color: var(--muted); }
+
+    .activity-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .activity-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .activity-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+      align-items: center;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .activity-row:last-child { border-bottom: none; }
+    .activity-row:hover { background: var(--surface2); }
+
+    .activity-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 16px;
+    }
+    .activity-type {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      margin-top: 3px;
+    }
+    .type-run    { background: rgba(200,240,74,0.12);  color: var(--accent); }
+    .type-hike   { background: rgba(74,240,200,0.12);  color: var(--accent2); }
+    .type-walk   { background: rgba(90,101,114,0.2);   color: var(--muted); }
+    .type-other  { background: rgba(90,101,114,0.15);  color: var(--muted); }
+
+    .activity-stat { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); }
+    .activity-stat .unit { font-size: 10px; color: var(--muted); margin-left: 2px; }
+    .activity-date { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+
+    .pb-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .pb-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .pb-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 0.04em;
+      color: var(--accent2);
+    }
+    .pb-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .type-bars { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+    .type-bar-row { display: flex; align-items: center; gap: 12px; }
+    .type-bar-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      width: 60px;
+      flex-shrink: 0;
+    }
+    .type-bar-track { flex: 1; height: 4px; background: var(--border); }
+    .type-bar-fill { height: 100%; transition: width 1s ease; }
+    .type-bar-count { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); width: 30px; text-align: right; }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+    }
+
+    .error-msg {
+      background: rgba(240,74,74,0.08);
+      border: 1px solid rgba(240,74,74,0.3);
+      color: var(--danger);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+    }
+
+    nav {
+      display: flex;
+      gap: 0;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-link {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .nav-link:hover { color: var(--text); }
+    .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    @media (max-width: 900px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+      .race-stats { gap: 16px; }
+      .activity-row { grid-template-columns: 2fr 1fr 1fr; }
+      .activity-row > *:nth-child(4),
+      .activity-row > *:nth-child(5) { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <span class="logo-eyebrow">Ultra Training</span>
+      <span class="logo-title">Summit Log</span>
+    </div>
+    <div class="header-right">
+      <button class="sync-btn" onclick="syncStrava()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+        Sync Strava
+      </button>
+    </div>
+  </header>
+
+  <nav>
+    <a class="nav-link active" href="/dashboard">Dashboard</a>
+    <a class="nav-link" href="/planner">Planner</a>
+    <a class="nav-link" href="#">Trails</a>
+  </nav>
+
+  <div id="error-container"></div>
+
+  <div id="section-dashboard">
+
+    <div id="race-banner" class="race-banner" style="display:none">
+      <div class="race-info">
+        <span class="race-label">Goal Race</span>
+        <span class="race-name" id="race-name">—</span>
+      </div>
+      <div class="race-stats">
+        <div class="race-stat">
+          <span class="race-stat-value" id="race-weeks">—</span>
+          <span class="race-stat-label">Weeks Out</span>
+        </div>
+        <div class="race-stat">
+          <span class="race-stat-value" id="race-dist">—</span>
+          <span class="race-stat-label">Miles</span>
+        </div>
+        <div class="race-stat">
+          <span class="race-stat-value" id="race-vert">—</span>
+          <span class="race-stat-label">Ft Gain</span>
+        </div>
+      </div>
+      <div class="phase-badge" id="race-phase">Base</div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">This Week vs Targets</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="targets-card" id="targets-card">
+      <div class="loading">Loading...</div>
+    </div>
+
+    <div class="section-header">
+      <span class="section-title">All Time</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="grid-4" id="alltime-grid">
+      <div class="loading">Loading...</div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="section-header">
+          <span class="section-title">Last 30 Days</span>
+          <div class="section-line"></div>
+        </div>
+        <div class="grid-3" id="recent-grid" style="margin-bottom:0">
+          <div class="loading">Loading...</div>
+        </div>
+      </div>
+      <div>
+        <div class="section-header">
+          <span class="section-title">Personal Bests</span>
+          <div class="section-line"></div>
+        </div>
+        <div class="pb-grid" id="pb-grid">
+          <div class="loading">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-top:24px">
+      <span class="section-title">Activity Breakdown</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" id="type-breakdown">
+        <div class="loading">Loading...</div>
+      </div>
+      <div class="activity-card" id="recent-activities-mini">
+        <div class="loading">Loading...</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+
+function showError(msg) {
+  document.getElementById('error-container').innerHTML =
+    `<div class="error-msg">⚠ ${msg}</div>`;
+  setTimeout(() => document.getElementById('error-container').innerHTML = '', 5000);
+}
+
+function fmt(n, dec=1) { return n != null ? Number(n).toFixed(dec) : '—'; }
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+function fmtNum(n) {
+  if (n == null) return '—';
+  return Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+function activityTypeClass(type, vert) {
+  if (['Run','TrailRun'].includes(type)) return 'type-run';
+  if (type === 'Hike') return 'type-hike';
+  if (type === 'Walk' && vert >= 500) return 'type-hike';
+  return 'type-other';
+}
+
+function activityTypeLabel(type, vert) {
+  if (['Run','TrailRun'].includes(type)) return type === 'TrailRun' ? 'Trail Run' : 'Run';
+  if (type === 'Hike') return 'Hike';
+  if (type === 'Walk' && vert >= 500) return 'Hike';
+  return type;
+}
+
+async function loadSummary() {
+  try {
+    const res = await fetch(`${API}/strava/summary`);
+    if (!res.ok) throw new Error('Failed to load summary');
+    const data = await res.json();
+
+    const at = data.all_time;
+    document.getElementById('alltime-grid').innerHTML = `
+      <div class="card">
+        <div class="card-label">Total Activities</div>
+        <div class="card-value">${fmtNum(at.total_activities)}</div>
+        <div class="card-unit">all time</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Total Miles</div>
+        <div class="card-value accent">${fmtNum(at.total_miles)}</div>
+        <div class="card-unit">miles logged</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Elevation Gain</div>
+        <div class="card-value accent2">${fmtNum(at.total_elevation_ft)}</div>
+        <div class="card-unit">feet climbed</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Time on Feet</div>
+        <div class="card-value">${fmtNum(at.total_hours)}</div>
+        <div class="card-unit">hours</div>
+      </div>
+    `;
+
+    const r = data.last_30_days;
+    document.getElementById('recent-grid').innerHTML = `
+      <div class="card">
+        <div class="card-label">Miles</div>
+        <div class="card-value accent">${fmt(r.total_miles)}</div>
+        <div class="card-unit">last 30 days</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Vert</div>
+        <div class="card-value accent2">${fmtNum(r.total_elevation_ft)}</div>
+        <div class="card-unit">feet</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Hours</div>
+        <div class="card-value">${fmt(r.total_hours)}</div>
+        <div class="card-unit">on feet</div>
+      </div>
+    `;
+
+    const pb = data.personal_bests;
+    document.getElementById('pb-grid').innerHTML = `
+      <div class="pb-item">
+        <div class="pb-value">${fmt(pb.longest_run_miles)}</div>
+        <div class="pb-label">Longest Run (mi)</div>
+      </div>
+      <div class="pb-item">
+        <div class="pb-value">${fmtNum(pb.most_vert_single_activity_ft)}</div>
+        <div class="pb-label">Most Vert Single Day (ft)</div>
+      </div>
+      <div class="pb-item">
+        <div class="pb-value">${fmt(pb.longest_ski_miles)}</div>
+        <div class="pb-label">Longest Ski (mi)</div>
+      </div>
+      <div class="pb-item">
+        <div class="pb-value">${fmtNum(pb.most_ski_vert_ft)}</div>
+        <div class="pb-label">Most Ski Vert (ft)</div>
+      </div>
+    `;
+
+    const bt = at.by_type;
+    const total = at.total_activities;
+    const types = [
+      { label: 'Runs',  count: bt.runs,  color: 'var(--accent)' },
+      { label: 'Hikes', count: bt.hikes, color: 'var(--accent2)' },
+      { label: 'Ski',   count: bt.ski,   color: '#a0c4ff' },
+      { label: 'Bike',  count: bt.bike,  color: '#ffd6a5' },
+      { label: 'Walks', count: bt.walks, color: 'var(--muted)' },
+      { label: 'Other', count: bt.other, color: '#4a4f58' },
+    ];
+    document.getElementById('type-breakdown').innerHTML = `
+      <div class="card-label">Activities by Type</div>
+      <div class="type-bars">
+        ${types.map(t => `
+          <div class="type-bar-row">
+            <div class="type-bar-label">${t.label}</div>
+            <div class="type-bar-track">
+              <div class="type-bar-fill" style="width:${(t.count/total*100).toFixed(1)}%;background:${t.color}"></div>
+            </div>
+            <div class="type-bar-count">${t.count}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    const actRes = await fetch(`${API}/strava/activities`);
+    const actData = await actRes.json();
+    const recent = actData.activities.slice(0, 8);
+    document.getElementById('recent-activities-mini').innerHTML = `
+      <div class="activity-header" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+        <span>Recent Activity</span><span>Miles</span><span>Vert</span><span>Time</span><span>Date</span>
+      </div>
+      ${recent.map(a => `
+        <div class="activity-row">
+          <div>
+            <div class="activity-name">${a.name || 'Untitled'}</div>
+            <span class="activity-type ${activityTypeClass(a.type, a.elevation_gain_ft)}">
+              ${activityTypeLabel(a.type, a.elevation_gain_ft)}
+            </span>
+          </div>
+          <div class="activity-stat">${fmt(a.distance_miles)}<span class="unit">mi</span></div>
+          <div class="activity-stat">${fmtNum(a.elevation_gain_ft)}<span class="unit">ft</span></div>
+          <div class="activity-stat">${fmt(a.duration_minutes/60)}<span class="unit">hr</span></div>
+          <div class="activity-date">${fmtDate(a.date)}</div>
+        </div>
+      `).join('')}
+    `;
+
+  } catch(e) {
+    showError('Could not load training summary. Is the server running?');
+    console.error(e);
+  }
+}
+
+async function loadGoal() {
+  try {
+    const res = await fetch(`${API}/goals/active`);
+    if (!res.ok) return;
+    const g = await res.json();
+
+    document.getElementById('race-banner').style.display = 'flex';
+    document.getElementById('race-name').textContent = g.race_name;
+    document.getElementById('race-weeks').textContent = g.weeks_to_race;
+    document.getElementById('race-dist').textContent = g.race_distance_miles;
+    document.getElementById('race-vert').textContent = fmtNum(g.race_elevation_gain_ft);
+    document.getElementById('race-phase').textContent =
+      g.current_phase.charAt(0).toUpperCase() + g.current_phase.slice(1);
+
+    const t = g.training_targets;
+    document.getElementById('targets-card').innerHTML = `
+      <div class="card-label" style="margin-bottom:16px">Week Targets — ${g.current_phase.toUpperCase()} Phase</div>
+      <div class="targets-grid">
+        <div class="target-item">
+          <div class="target-label">Weekly Miles</div>
+          <div class="target-range">${t.target_weekly_miles} mi</div>
+          <div class="target-desc">Long run: ${t.long_run_range_miles} mi</div>
+        </div>
+        <div class="target-item">
+          <div class="target-label">Weekly Vert</div>
+          <div class="target-range">${fmtNum(t.target_weekly_vert_ft)} ft</div>
+          <div class="target-desc">Vert day: ${t.vert_day_range_ft} ft</div>
+        </div>
+        <div class="target-item">
+          <div class="target-label">Long Run Vert</div>
+          <div class="target-range">${t.long_run_vert_range_ft} ft</div>
+          <div class="target-desc">${g.weeks_to_race} weeks to ${g.race_name}</div>
+        </div>
+      </div>
+    `;
+
+  } catch(e) {
+    console.error('Could not load goal:', e);
+  }
+}
+
+async function syncStrava() {
+  const btn = document.querySelector('.sync-btn');
+  btn.textContent = 'Syncing...';
+  try {
+    const res = await fetch(`${API}/strava/sync`);
+    const data = await res.json();
+    btn.innerHTML = `✓ Synced ${data.saved} new`;
+    setTimeout(() => {
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Sync Strava`;
+      loadSummary();
+    }, 2000);
+  } catch(e) {
+    btn.textContent = 'Sync Failed';
+    setTimeout(() => btn.textContent = 'Sync Strava', 2000);
+  }
+}
+
+async function init() {
+  await Promise.all([loadSummary(), loadGoal()]);
+}
+
+init();
+</script>
+</body>
+</html>
